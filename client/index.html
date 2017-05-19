@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>To Do Anything</title>
+    <link rel="stylesheet" href="./assets/css/materialize.css">
+    <link rel="stylesheet" href="./assets/style.css">
+    <script src="./assets/js/materialize.js"></script>
+    <script src="./assets/vue.js"></script>
+    <script src="./assets/axios.min.js"></script>
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.98.2/js/materialize.min.js"></script> -->
+
+  </head>
+  <body>
+  <script type="text/x-template" id="modal-template">
+    <transition name="modal">
+    <div class="modal-mask">
+      <div class="modal-wrapper">
+        <div class="modal-container">
+          <a class="modal-default-button fa fa-times fa-lg" @click="$emit('close')">X</a>
+          <div class="modal-header">
+            <slot name="header">
+            </slot>
+          </div>
+          <div class="modal-body">
+            <slot name="body">
+            </slot>
+          </div>
+          <div class="modal-footer">
+            <slot name="footer">
+            </slot>
+          </div>
+        </div>
+      </div>
+    </div>
+    </transition>
+    </script>
+    <div id="app">
+       <nav class="blue">
+        <div class="nav-wrapper container">
+          <a href="#" class="brand-logo">To Do Anythings</a>
+          <ul id="nav-mobile" class="right hide-on-med-and-down">
+            <li><a href="badges.html">Welcome {{name}}</a></li>
+            <li><a @click="logout">Logout</a></li>
+          </ul>
+        </div>
+      </nav>
+      <div class="container"><br>
+      <a @click="modalInsertTodo = true">Add List</a>
+        <modal v-if="modalInsertTodo" @close="modalInsertTodo = false">
+          <h4 slot="header"> Insert Task</h4>
+          <div slot="body">
+            <form action="" class="search-form" v-on:submit.prevent="saveTodo()">
+              <div class="form-group">
+                  <label>Task</label>
+                  <input type="text" class="form-control" name="task" v-model="task">
+              </div>
+              <div class="form-group">
+                  <label>Date Finish</label>
+                  <input type="datetime-local" class="form-control" name="task" v-model="date">
+              </div>
+              <button type="submit" class="pure-button pure-button-primary btn-lg" v-on:olick="saveTodo">Save</button>
+            </form>
+          </div>
+        </modal>
+      <table>
+        <tr>
+          <td>No</td>
+          <td>Task</td>
+          <td>Date Finish</td>
+          <td>Status</td>
+          <td>Action</td>
+        </tr>
+        <tr v-for="(list, index) in lists">
+          <td>{{index+1}}</td>
+          <td>{{list.task}}</td>
+          <td>{{list.date_finish}}</td>
+          <td><a href="#" v-on:click="updateStatus(list._id)">{{list.status}}</a></td>
+          <td><a href="#" v-on:click="deleteDataTodo(list._id)">Delete</a></td>
+        </tr>
+      </table>
+      </div>
+    </div>
+  </body>
+  <script>
+    Vue.component('modal', {
+    template: '#modal-template'
+  })
+  var app = new Vue({
+    el: '#app',
+    data: {
+      userid : "",
+      name : "",
+      username : "",
+      lists:[],
+      task :"",
+      date : "",
+      number : 0,
+      modalInsertTodo : false
+    },
+    methods: {
+      logout: function () {
+        localStorage.clear()
+        window.location.href = 'http://127.0.0.1:8080/signin.html'
+      },
+      getToken: function () {
+        var tokenValue = localStorage.getItem('token')
+        if(tokenValue == null){
+          window.location.href = 'http://127.0.0.1:8080/signin.html'
+        }else{
+          var that = this
+          axios.post('http://localhost:3000/users/validate', {
+            token:tokenValue
+          })
+          .then(function(response){
+            if(!response.data.username){
+              localStorage.clear()
+              window.location.href = 'http://127.0.0.1:8080/signin.html'
+            }else{
+            that.name = response.data.name;
+            that.username = response.data.username;
+            that.userid = response.data.id;
+
+            axios.get(`http://localhost:3000/todos/`+that.userid)
+            .then(function (response) {
+              // console.log(that.userid)
+              that.lists = response.data
+              console.log(response.data)
+            })
+          }
+          })
+        }
+      },
+      deleteDataTodo : function(id){
+        axios.delete(`http://localhost:3000/todos/${id}`)
+        .then(function () {
+          alert("Data Todo Deleted")
+          window.location.href = 'http://127.0.0.1:8080/'
+        })
+      },
+      updateStatus : function(id){
+        axios.patch(`http://localhost:3000/todos/${id}`, {
+          status : true
+        })
+        .then(function () {
+          location.reload()
+        })
+      },
+      saveTodo : function(){
+        axios.post('http://localhost:3000/todos/',{
+          task : this.task,
+          status : false,
+          date_finish : this.date,
+          userlist : this.userid
+        })
+        .then(function(response) {
+          this.modalInsertTodo = false
+          window.location.href = 'http://127.0.0.1:8080/'
+        })
+
+      }
+    },
+    created: function() {
+      this.getToken()
+    }
+  })
+
+  </script>
+</html>

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>To Do Anything</title>
+    <link rel="stylesheet" href="./assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="./assets/style.css">
+    <link rel="stylesheet" href="https://unpkg.com/purecss@0.6.2/build/pure-min.css" integrity="sha384-UQiGfs9ICog+LwheBSRCt1o5cbyKIHbwjWscjemyBMT9YCUMZffs6UqUTd0hObXD" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-social/5.1.1/bootstrap-social.css">
+    <script src="./assets/vue.js"></script>
+    <script src="./assets/axios.min.js"></script>
+    <style>
+        body         { padding-top:10%; }
+    </style>
+
+
+  </head>
+  <body>
+   <script type="text/x-template" id="modal-template">
+    <transition name="modal">
+    <div class="modal-mask">
+      <div class="modal-wrapper">
+        <div class="modal-container">
+          <a class="modal-default-button fa fa-times fa-lg" @click="$emit('close')"></a>
+          <div class="modal-header">
+            <slot name="header">
+            </slot>
+          </div>
+          <div class="modal-body">
+            <slot name="body">
+            </slot>
+          </div>
+          <div class="modal-footer">
+            <slot name="footer">
+            <a @click="$emit('close')">I'M ALREADY A MEMBER</a>
+            </slot>
+          </div>
+        </div>
+      </div>
+    </div>
+    </transition>
+    </script>
+
+    <div id="app">
+      <div class="container">
+        <div class="col-sm-4 col-sm-offset-4">
+        <div class="thumbnail">
+        <a class="btn btn-block btn-lg btn-social btn-facebook" @click="signFacebook()">
+          <span class="fa fa-facebook"></span> Sign in with Facebook
+        </a>
+        <a class="btn btn-block btn-lg text-center btn-twitter" id="show-modal" @click="showModalSignin = true">
+           Sign in with Local
+        </a>
+        <a class="btn btn-block btn-lg text-center btn-google" id="show-modal" @click="showModalRegister = true">
+          Sign Up
+        </a>
+        </div>
+        </div>
+          <modal v-if="showModalRegister" @close="showModalRegister = false">
+            <h3 slot="header"> Create a free account</h3>
+            <div slot="body">
+            <p></p>
+              <form action="" class="search-form" v-on:submit.prevent="signup()">
+                <div class="form-group">
+                    <label>Nama Lengkap</label>
+                    <input type="text" class="form-control" name="text" v-model="name">
+                </div>
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" class="form-control" name="text" v-model="username">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" class="form-control" name="password" v-model="password">
+                </div>
+                <div class="form-group">
+                    <label>email</label>
+                    <input type="text" class="form-control" name="email" v-model="email">
+                </div>
+                <button type="submit" class="pure-button pure-button-primary btn-lg" v-on:olick="signup">Sign Up</button>
+              </form>
+            </div>
+          </modal>
+        <modal v-if="showModalSignin" @close="showModalSignin = false">
+          <h3 slot="header"> Sign In</h3>
+          <div slot="body">
+            <form action="" class="search-form" v-on:submit.prevent="signin">
+              <div class="form-group">
+                  <label>Username</label>
+                  <input type="text" class="form-control" name="text" v-model="username">
+              </div>
+              <div class="form-group">
+                  <label>Password</label>
+                  <input type="password" class="form-control" name="password" v-model="password">
+              </div>
+              <button type="submit" class="pure-button pure-button-primary btn-lg" v-on:submit.prevent="signin">Sign In</button>
+            </form>
+          </div>
+          <div slot="footer">
+          </div>
+        </modal>
+      </div>
+    </div>
+    </body>
+  <script>
+  // register modal component
+  Vue.component('modal', {
+    template: '#modal-template'
+  })
+
+  var app = new Vue({
+    el: '#app',
+    data: {
+      name: "",
+      username : "",
+      password : "",
+      email : "",
+      msg:"",
+      showModalRegister: false,
+      showModalSignin : false
+    },
+    methods : {
+      signup : function(){
+        axios.post('http://localhost:3000/users/signup',{
+          name : this.name,
+          username : this.username,
+          password : this.password,
+          email : this.email
+        })
+        .then(function(response) {
+          console.log(response.data)
+          if(!response.data.username){
+           alert(response.data)
+           location.reload()
+         }else{
+           window.location.href ='http://127.0.0.1:8080/signin.html';
+         }
+        })
+        .catch(function (error) {
+          console.log(error);
+        });
+      },
+      signin : function(){
+        axios.post('http://localhost:3000/users/signin',{
+          username : this.username,
+          password : this.password
+        })//disini harus didecode dulu jadi tambahin then nantinya buat alert
+        .then(function (response) {
+          if(response.data.token===undefined){
+            alert(response.data)
+          }else{
+            localStorage.setItem("token", response.data.token);
+            window.location.href ='http://127.0.0.1:8080/';
+          }
+        })
+        .catch(function (error) {
+          console.log(error);
+          // console.log(error.msg);
+        });
+      },
+      signFacebook : function(){
+          axios.get('http://localhost:3000/users/login/facebook')
+        .then(function (response) {
+          console.log(response)
+        })
+      }
+    },
+    created : function(){
+      var tokenValue = localStorage.getItem('token')
+        if(tokenValue!= null){
+          window.location.href = 'http://127.0.0.1:8080/'
+        }
+    }
+  })
+  </script>
+</html>
